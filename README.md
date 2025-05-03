@@ -111,7 +111,9 @@ ansible-playbook -i inventory main.yml
 - **Download Traefik**: Downloads the specified version of Traefik from GitHub.
 - **Configure Traefik**: Templates static and dynamic configuration files.
 - **Systemd Service**: Creates and starts a systemd service for Traefik.
+---
 Variables
+
 - **traefik_version**: The version of Traefik to install.
 - **traefik_email**: Email address for Let's Encrypt certificates.
 - **traefik_domain**: The primary domain for the service.
