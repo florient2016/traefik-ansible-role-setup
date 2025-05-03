@@ -1,0 +1,13 @@
+---
+os_distribution: "{{ ansible_distribution | lower }}"  # rhel or ubuntu
+traefik_version: "2.11.7"
+traefik_email: "admin@example.com"
+traefik_domain: "example.com"
+traefik_dashboard: true
+traefik_dashboard_domain: "dashboard.example.com"
+traefik_service_ip: "192.168.1.100"  # Backend service IP
+traefik_services:
+  - name: "site"
+    url: "http://{{ traefik_service_ip }}:80"
+    route: "Host(`{{ traefik_domain }}`)"
+    service_name: "site-service"

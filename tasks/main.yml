@@ -1,0 +1,97 @@
+---
+- name: Install prerequisites on RHEL
+  when: os_distribution == "redhat"
+  block:
+    - name: Enable EPEL repository
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+    - name: Install dependencies
+      ansible.builtin.dnf:
+        name:
+          - wget
+          - tar
+        state: present
+
+- name: Install prerequisites on Ubuntu
+  when: os_distribution == "ubuntu"
+  ansible.builtin.apt:
+    name:
+      - wget
+      - tar
+    state: present
+    update_cache: yes
+
+- name: Create Traefik user
+  ansible.builtin.user:
+    name: traefik
+    system: yes
+    create_home: no
+    state: present
+
+- name: Download Traefik binary
+  ansible.builtin.get_url:
+    url: "https://github.com/traefik/traefik/releases/download/v{{ traefik_version }}/traefik_v{{ traefik_version }}_linux_amd64.tar.gz"
+    dest: "/tmp/traefik_v{{ traefik_version }}.tar.gz"
+    mode: '0644'
+
+- name: Extract Traefik binary
+  ansible.builtin.unarchive:
+    src: "/tmp/traefik_v{{ traefik_version }}.tar.gz"
+    dest: /usr/local/bin/
+    remote_src: yes
+    mode: '0755'
+    owner: traefik
+    group: traefik
+
+- name: Create Traefik configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: traefik
+    group: traefik
+    mode: '0755'
+  with_items:
+    - /etc/traefik
+    - /etc/traefik/service
+
+- name: Template Traefik configuration
+  ansible.builtin.template:
+    src: traefik.yaml.j2
+    dest: /etc/traefik/traefik.yaml
+    owner: traefik
+    group: traefik
+    mode: '0644'
+
+- name: Template dynamic configuration
+  ansible.builtin.template:
+    src: dynamic_config.yaml.j2
+    dest: /etc/traefik/service/dynamic_config.yaml
+    owner: traefik
+    group: traefik
+    mode: '0644'
+
+- name: Create Traefik systemd service
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Traefik Reverse Proxy
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=traefik
+      Group=traefik
+      ExecStart=/usr/local/bin/traefik --configFile=/etc/traefik/traefik.yaml
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/traefik.service
+    mode: '0644'
+
+- name: Enable and start Traefik service
+  ansible.builtin.systemd:
+    name: traefik
+    enabled: yes
+    state: started

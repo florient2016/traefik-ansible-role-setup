@@ -1,0 +1,33 @@
+http:
+  routers:
+    {% for service in traefik_services %}
+    {{ service.name }}-router:
+      rule: "{{ service.route }}"
+      service: {{ service.service_name }}
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: production
+    {% endfor %}
+    {% if traefik_dashboard %}
+    dashboard-router:
+      rule: "Host(`{{ traefik_dashboard_domain }}`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: production
+    {% endif %}
+
+  services:
+    {% for service in traefik_services %}
+    {{ service.service_name }}:
+      loadBalancer:
+        servers:
+          - url: "{{ service.url }}"
+        #serversTransport: my-tls-client-auth
+    {% endfor %}
+
+  serversTransports:
+    my-tls-client-auth:
+      insecureSkipVerify: true

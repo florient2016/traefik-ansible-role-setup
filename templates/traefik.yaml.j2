@@ -1,0 +1,51 @@
+---
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+entryPoints:
+  web:
+    address: :80
+    forwardedHeaders:
+      insecure: true
+    # (Optional) Redirect to HTTPS
+    # ---
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  websecure:
+    address: :443
+    forwardedHeaders:
+      insecure: true
+
+
+providers:
+  file:
+    directory: "/etc/traefik/services/"
+    watch: true
+
+certificatesResolvers:
+  production:
+    acme:
+      email: "{{ traefik_email }}"
+      storage: /etc/traefik/acme.json
+      httpChallenge:
+        entryPoint: web
+
+log:
+  level: DEBUG
+
+api:
+  dashboard: true
+  insecure: false
+  debug: true
+
+# Enable dashboard
+# dashboard:
+#   users:
+#     users:
+#       admin:
+#         password: "{{ traefik_admin_password }}"
